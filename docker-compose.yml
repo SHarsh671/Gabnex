@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: gabnex
+      POSTGRES_USER: ${DATABASE_USERNAME:-gabnex}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-gabnex}
+    volumes:
+      - gabnex_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-gabnex} -d gabnex"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  backend:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      DATABASE_URL: jdbc:postgresql://db:5432/gabnex
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-gabnex}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-gabnex}
+      JWT_SECRET: ${JWT_SECRET:-local-only-change-me-please-0123456789}
+      MARKET_DATA_API_KEY: ${MARKET_DATA_API_KEY:-}
+      MARKET_DATA_BASE_URL: ${MARKET_DATA_BASE_URL:-https://www.alphavantage.co/query}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports: ["8080:8080"]
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080/api/v1}
+    depends_on: [backend]
+    ports: ["5173:80"]
+volumes:
+  gabnex_data:

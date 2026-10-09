@@ -1,0 +1,963 @@
+# GABNEX — Complete Full-Stack Investment Portfolio Tracker
+
+## YOUR ROLE
+
+Act as a senior full-stack software engineer, software architect, financial-calculation specialist, QA engineer, and UI/UX designer.
+
+Build **Gabnex**, a complete, production-minded investment portfolio tracking and analytics platform. Work autonomously from initial inspection through implementation, testing, documentation, and deployment preparation.
+
+Do not merely give me a plan, tutorials, snippets, or a prototype. **Actually create and integrate the application in the current workspace.** Use the terminal, edit files, install dependencies, run tests, fix errors, and verify the finished result.
+
+I am a recent computer science graduate building this project to demonstrate that I can develop a real software application and explain its engineering decisions in software engineering interviews. The result should be polished, technically credible, and realistic for a junior software engineer's portfolio.
+
+Work through the milestones internally in the correct order, but do not stop to ask my approval after each milestone. Make sensible engineering decisions independently and complete as much of the project as possible in this run.
+
+If something genuinely requires an external credential, account, or manual action, implement everything that can be completed without it, document the blocker, and provide exact instructions for finishing it. Never claim that an unavailable integration or deployment works.
+
+---
+
+# 1. PRODUCT VISION
+
+**Project name:** Gabnex  
+**Project type:** Full-stack investment portfolio tracker and analytics platform  
+**Initial asset scope:** Publicly traded stocks and ETFs supported by the chosen market-data provider.
+
+Gabnex lets users record investment transactions, track their holdings, monitor portfolio value, and understand their investment performance using real market data.
+
+It should feel like a small, polished financial product—not a generic CRUD tutorial or a static dashboard template.
+
+The application should demonstrate:
+
+- Secure authentication and authorization.
+- REST API design and backend architecture.
+- Relational database design and transaction integrity.
+- Financial calculations and monetary precision.
+- Integration with a real third-party market-data API.
+- Error handling, caching, and external-service resilience.
+- Automated backend and frontend testing.
+- Responsive frontend development.
+- Containerization, CI, documentation, and deployment readiness.
+
+Do not implement actual brokerage connectivity, order execution, banking integrations, cryptocurrency, or complex tax reporting. This is a portfolio tracking application, not a trading platform or financial-advice product.
+
+---
+
+# 2. REQUIRED TECHNOLOGY STACK
+
+Use this stack unless a genuine compatibility issue requires a clearly documented adjustment.
+
+## Backend
+
+- Java 21.
+- Spring Boot 3.x using a mutually compatible stable release.
+- Maven.
+- Spring Web for REST endpoints.
+- Spring Data JPA and Hibernate for persistence.
+- Spring Security for authentication and authorization.
+- JWT-based authentication.
+- BCrypt password hashing.
+- Jakarta Bean Validation for request validation.
+- PostgreSQL as the primary database.
+- Flyway for version-controlled database migrations.
+- Spring Boot Actuator for health checks.
+- Springdoc OpenAPI for interactive API documentation.
+- JUnit 5, Mockito, and Spring Boot Test.
+- MockMvc for HTTP integration tests.
+
+Use constructor-based dependency injection, DTOs, centralized exception handling, clear package boundaries, and maintainable code.
+
+## Frontend
+
+- React 18 or a compatible stable React version.
+- Vite.
+- JavaScript and JSX.
+- React Router for navigation.
+- Fetch API or a small, appropriate HTTP client.
+- Plain CSS or CSS Modules for styling.
+- A lightweight charting library for portfolio visualizations.
+
+Do not introduce TypeScript, a second frontend framework, or a large component library unless there is a clear reason. Keep the implementation consistent and understandable.
+
+## Infrastructure and tooling
+
+- Docker and Docker Compose.
+- Git and GitHub.
+- GitHub Actions for CI.
+- Environment variables for configuration and secrets.
+- A deployment-compatible PostgreSQL database.
+- A real external market-data API.
+
+Use Redis only if there is a demonstrated benefit and it can be implemented without making the project unnecessarily complex. Do not introduce Kafka, Kubernetes, microservices, or cloud infrastructure that the application does not need.
+
+Use mutually compatible dependency versions and verify the build rather than assuming generated code compiles.
+
+---
+
+# 3. NON-NEGOTIABLE REAL MARKET DATA REQUIREMENT
+
+**Real external market data is mandatory. Fabricated production prices are prohibited.**
+
+The application must integrate with an actual market-data provider through a backend service. Do not create a fake stock market service, hardcode example prices, or populate production holdings with fictional prices merely to make the dashboard look complete.
+
+## Select a suitable provider
+
+Before implementing the integration:
+
+1. Research currently available stock and ETF market-data APIs.
+2. Review the provider's official documentation, supported symbols and exchanges, API limits, authentication, pricing, data freshness, and applicable usage terms.
+3. Choose a provider that supports the initial asset scope and is practical for a personal portfolio project.
+4. Prefer a provider with an accessible free or low-cost tier, but do not assume that free access includes real-time quotes.
+5. Document any restrictions, including delayed quotes, end-of-day data, symbol coverage, and request limits.
+6. Use the provider's actual supported endpoints and response formats. Do not invent API endpoints or response fields.
+
+Do not commit to a provider solely because its name appears in this specification. Verify its current capabilities first.
+
+## Market-data architecture
+
+Create a clean abstraction, such as:
+
+- `MarketDataProvider` — interface for market-data operations.
+- A concrete provider implementation using the selected API.
+- `MarketDataService` — coordinates retrieval, validation, persistence, and caching.
+- Appropriate DTOs for provider responses.
+- A market-price snapshot model recording the asset, price, currency, source, retrieval time, and provider-reported timestamp when available.
+
+Keep the API key on the backend. Never expose it through React, public environment variables, source code, logs, or API responses.
+
+Use configurable connection and response timeouts. Handle rate limits, timeouts, HTTP errors, invalid JSON, missing values, unsupported symbols, and provider outages.
+
+Cache prices where appropriate to reduce API usage. Cache expiry must respect the provider's update frequency and rate limits. Never present a cached price as newly retrieved data.
+
+## Honest pricing behavior
+
+For every displayed market price, expose enough information to identify its freshness and source.
+
+- Display the last successful retrieval time.
+- Display the provider's quote timestamp when available.
+- Identify whether data is real-time, delayed, or end-of-day only when the provider establishes that status.
+- Clearly mark stale data.
+- If a price cannot be retrieved, show it as unavailable.
+- If no market-data API key has been configured, show a clear setup or unavailable-data message.
+- Allow users to view and manage their recorded transactions even when market data is unavailable.
+- Do not silently replace failed API results with hardcoded values.
+- Do not invent historical prices, chart points, market movements, or daily returns.
+- Do not label an old quote as live or real-time.
+- Never represent a successful HTTP response as proof of a valid quote; validate the actual payload and price fields.
+
+**A successful fallback is an honest unavailable-data state, not a fake price.**
+
+For automated tests, use mocked provider responses. Clearly isolate test fixtures from production code. Test data may contain sample prices, but those values must never appear as live market data in a deployed application.
+
+---
+
+# 4. CORE FEATURES
+
+## A. Authentication and user accounts
+
+Implement:
+
+- User registration.
+- Login and logout.
+- Authenticated session handling.
+- Current-user profile.
+- Appropriate validation and user-friendly error messages.
+- Secure password hashing.
+- Protected routes and endpoints.
+- A mechanism to invalidate or expire authentication according to the chosen token/session design.
+
+Use JWT-based authentication with Spring Security.
+
+Choose an appropriate browser token-storage strategy. Prefer a secure, HttpOnly cookie where it can be implemented correctly, including CSRF protections appropriate to the design. If using a different strategy, document the security trade-offs and protect tokens against exposure.
+
+Never store plaintext passwords. Never return password hashes in API responses.
+
+A user must only be able to access their own portfolios, transactions, holdings, watchlist, and analytics. Enforce ownership checks in the backend, not just the frontend.
+
+Return appropriate HTTP status codes and avoid exposing sensitive implementation details in errors.
+
+## B. Portfolio management
+
+Users must be able to:
+
+- Create a portfolio.
+- View their portfolios.
+- Rename and edit portfolio details.
+- Delete a portfolio with clearly defined handling of its associated transactions.
+- View the portfolio's holdings and analytics.
+- See the portfolio's recorded base currency.
+- Record a transaction against a specific portfolio.
+
+A user can own multiple portfolios. Keep ownership and data relationships explicit.
+
+Use a documented initial currency policy. Do not silently add together monetary values denominated in different currencies. If multi-currency conversion is not fully implemented using real exchange-rate data, restrict calculations to a single supported currency per portfolio and state the limitation clearly.
+
+## C. Asset search and watchlist
+
+Implement:
+
+- Search for supported stocks and ETFs using the actual provider's symbol-search capabilities.
+- Display the supported ticker, asset name, exchange when available, and currency when available.
+- View an asset's latest available quote.
+- Add and remove assets from a watchlist.
+- Prevent duplicate watchlist entries for the same user and asset.
+- Handle unsupported symbols and empty search results gracefully.
+
+Do not build a fake asset-search catalog that implies unsupported assets have verified prices.
+
+If a small static list is needed for UI navigation, label it as a list of suggested symbols rather than treating it as authoritative market data.
+
+## D. Investment transactions
+
+Support recording and managing:
+
+- Buy transactions.
+- Sell transactions.
+- Quantity.
+- Execution price.
+- Transaction fees.
+- Transaction date and time.
+- Associated portfolio and asset.
+- Optional notes.
+
+Users must be able to view, filter, sort, and paginate their transaction history.
+
+Validate all transaction input. Quantities must be positive, prices and fees must follow sensible monetary rules, dates must be valid, and users must own the associated portfolio.
+
+Prevent selling more shares than the user owns under the chosen accounting model. Short selling is out of scope.
+
+Editing or deleting a historical transaction must recalculate affected holdings and profit/loss consistently. Use database transactions where multiple changes must succeed or fail together.
+
+Do not treat the current market price as the historical execution price. A recorded buy or sell must retain its actual user-entered execution price.
+
+## E. Holdings
+
+Derive holdings from the transaction history rather than letting users manually set their share balances.
+
+For each asset, show:
+
+- Ticker and asset name.
+- Quantity held.
+- Average cost per share.
+- Total remaining cost basis.
+- Latest available market price.
+- Market value.
+- Unrealized profit or loss.
+- Realized profit or loss where supported by the transaction accounting model.
+- Portfolio allocation percentage where the necessary values are available.
+
+Recalculate holdings after a transaction is added, edited, or deleted.
+
+Do not show misleading zero values when the price or cost basis is unknown. Distinguish a genuine zero from unavailable information.
+
+## F. Dashboard and analytics
+
+Build a dashboard with:
+
+- Total portfolio market value, when all required prices are available.
+- Total remaining cost basis.
+- Unrealized profit/loss.
+- Realized profit/loss.
+- Overall profit/loss using clearly defined accounting rules.
+- Asset allocation chart.
+- Portfolio holdings table.
+- Recent transactions.
+- Watchlist summary.
+- Market-data freshness indicators.
+- Clear empty states for a new account.
+- Loading, error, partial-data, and unavailable-price states.
+
+Only calculate market-value-based totals when the required data is sufficiently complete. If one or more holdings lack usable prices, communicate that the displayed total is incomplete rather than quietly omitting the holdings or substituting made-up values.
+
+## G. Historical performance
+
+Only implement historical performance charts when the chosen provider supplies the required real historical data and the calculations can be performed correctly.
+
+Distinguish between:
+
+- Changes in portfolio market value.
+- Realized and unrealized profit/loss.
+- Simple return based on a defined cost basis.
+- Time-weighted return.
+- Money-weighted return.
+
+These metrics are not interchangeable.
+
+Do not calculate time-weighted or money-weighted returns by simply dividing profit by purchase cost. If the application cannot calculate a metric accurately, omit it or label the simpler metric precisely.
+
+A history of portfolio values reconstructed from actual dated holdings, actual transactions, and real historical prices may be shown if the method is sound and limitations are documented.
+
+Do not invent historical snapshots to create a smoother chart.
+
+---
+
+# 5. FINANCIAL CALCULATION AND ACCOUNTING RULES
+
+Financial correctness is a core engineering requirement.
+
+## Monetary precision
+
+- Use Java `BigDecimal` for monetary calculations.
+- Do not use `double` or `float` for financial arithmetic.
+- Define a consistent scale and rounding policy.
+- Use explicit rounding modes where rounding is required.
+- Keep share quantities at an appropriate precision.
+- Avoid unnecessary rounding during intermediate calculations.
+- Use decimal database types with appropriate precision and scale.
+
+Document the selected conventions.
+
+## Cost-basis method
+
+Use a clearly documented weighted-average-cost method for the initial implementation unless a specific limitation makes another consistent method more appropriate.
+
+Implement and test:
+
+- Buy transactions increasing quantity and cost basis.
+- Transaction fees included consistently in purchase cost basis.
+- Sell transactions reducing quantity and the corresponding remaining cost basis.
+- Sell proceeds net of applicable selling fees.
+- Realized profit/loss based on net proceeds and the cost basis of the shares sold.
+- Unrealized profit/loss based on available current market value and remaining cost basis.
+- Full liquidation of a holding.
+- Repeated buys at different prices.
+- Partial sells.
+- Transactions with fees.
+- Editing and deleting earlier transactions.
+- Invalid transactions and insufficient holdings.
+
+For weighted-average cost, calculate the remaining average cost according to the documented policy and handle rounding residuals consistently when shares are sold. A fully liquidated holding should not retain an unexplained residual cost basis.
+
+Use a consistent sign convention for profits, losses, and cash flows. Define whether displayed values include fees and explain the policy in the README.
+
+## Allocation
+
+Calculate asset allocation using eligible, available market values and a clearly defined denominator. Do not include unavailable prices as zero without explaining the resulting distortion.
+
+If all required market values are unavailable or the denominator is zero, show an unavailable or empty state rather than dividing by zero.
+
+## Database consistency
+
+- Use database transactions for logically atomic operations.
+- Validate data at the application layer and enforce suitable database constraints.
+- Prevent duplicate watchlist entries.
+- Add indexes for commonly queried foreign keys and filters where justified.
+- Use migrations for schema changes.
+- Avoid deleting or corrupting related transaction records accidentally.
+- Test calculations using explicit expected results, not only tests that assert a result is non-null.
+
+---
+
+# 6. DATABASE DESIGN
+
+Create a normalized PostgreSQL schema with suitable relationships, constraints, indexes, and migration scripts.
+
+Use entities equivalent to the following. Adjust names or relationships when there is a clear architectural reason.
+
+### User
+
+- ID.
+- Name.
+- Email with uniqueness enforcement.
+- Password hash.
+- Created and updated timestamps.
+
+### Portfolio
+
+- ID.
+- Owner.
+- Name.
+- Base currency.
+- Created and updated timestamps.
+
+### Asset
+
+- ID.
+- Provider symbol or identifier.
+- Ticker.
+- Name.
+- Exchange when available.
+- Currency when available.
+- Asset type.
+- Provider identity or mapping details where required.
+
+Avoid duplicate asset records for the same provider symbol and exchange where the provider's identifiers allow reliable identification.
+
+### InvestmentTransaction
+
+- ID.
+- Portfolio.
+- Asset.
+- Transaction type.
+- Quantity.
+- Execution price.
+- Fees.
+- Transaction timestamp.
+- Notes.
+- Created and updated timestamps.
+
+### WatchlistItem
+
+- ID.
+- User.
+- Asset.
+- Created timestamp.
+- A uniqueness constraint preventing duplicate user/asset entries.
+
+### MarketPriceSnapshot
+
+- ID.
+- Asset.
+- Price.
+- Currency.
+- Data provider.
+- Provider-reported timestamp where available.
+- Retrieval timestamp.
+- Quote classification or freshness metadata where supported.
+
+Only persist valid, usable prices. Do not overwrite a valid stored quote with malformed data.
+
+Use Flyway migrations to create and evolve the schema. Ensure the schema can be recreated from a clean database.
+
+Do not return JPA entities directly from REST endpoints. Use DTOs to control response structure and avoid accidental disclosure of sensitive fields.
+
+---
+
+# 7. REST API DESIGN
+
+Design and implement a consistent, versioned API under `/api/v1` or another clearly documented prefix.
+
+The following operations are required. Adapt exact paths when needed, but implement the corresponding functionality.
+
+## Authentication
+
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/logout` when applicable to the chosen session strategy
+- `GET /api/v1/auth/me`
+
+## Portfolios
+
+- `GET /api/v1/portfolios`
+- `POST /api/v1/portfolios`
+- `GET /api/v1/portfolios/{portfolioId}`
+- `PUT /api/v1/portfolios/{portfolioId}`
+- `DELETE /api/v1/portfolios/{portfolioId}`
+
+## Transactions
+
+- `GET /api/v1/portfolios/{portfolioId}/transactions`
+- `POST /api/v1/portfolios/{portfolioId}/transactions`
+- `GET /api/v1/transactions/{transactionId}`
+- `PUT /api/v1/transactions/{transactionId}`
+- `DELETE /api/v1/transactions/{transactionId}`
+
+Support validated pagination, filtering, and sorting for transaction history.
+
+## Holdings
+
+- `GET /api/v1/portfolios/{portfolioId}/holdings`
+- `GET /api/v1/portfolios/{portfolioId}/holdings/{assetId}`
+
+## Assets and market data
+
+- `GET /api/v1/assets/search?query=...`
+- `GET /api/v1/assets/{assetId}`
+- `GET /api/v1/assets/{assetId}/price`
+- `POST /api/v1/assets/{assetId}/refresh-price` or an equivalent protected refresh operation.
+
+Follow the provider's actual capabilities and rate limits when refreshing prices.
+
+## Watchlist
+
+- `GET /api/v1/watchlist`
+- `POST /api/v1/watchlist`
+- `DELETE /api/v1/watchlist/{watchlistItemId}`
+
+## Dashboard and analytics
+
+- `GET /api/v1/portfolios/{portfolioId}/dashboard`
+- `GET /api/v1/portfolios/{portfolioId}/allocation`
+- `GET /api/v1/portfolios/{portfolioId}/performance` only if implemented using valid underlying data.
+
+## Health and documentation
+
+- Provide a health endpoint suitable for deployment monitoring.
+- Provide OpenAPI documentation for the implemented endpoints.
+
+Use appropriate HTTP methods and status codes. Validate request bodies, return consistent error responses, and avoid exposing stack traces or secrets.
+
+Use centralized exception handling and meaningful validation messages. Document authentication requirements, request schemas, response schemas, and common errors.
+
+---
+
+# 8. BACKEND ARCHITECTURE
+
+Use a modular monolith with clear boundaries.
+
+A suitable structure is:
+
+- `config`
+- `security`
+- `auth`
+- `user`
+- `portfolio`
+- `asset`
+- `transaction`
+- `holding`
+- `watchlist`
+- `marketdata`
+- `analytics`
+- `common`
+
+Each feature should have the appropriate controller, service, repository, DTO, and entity classes. Do not create unnecessary layers for their own sake.
+
+Responsibilities:
+
+- Controllers handle HTTP concerns.
+- Services contain business rules and coordinate transactions.
+- Repositories handle persistence.
+- DTOs define external request and response contracts.
+- Security components handle authentication and authorization.
+- Market-data components isolate external provider details.
+- Financial calculation components implement documented accounting rules.
+
+Use constructor injection. Avoid giant service classes, duplicated business logic, controllers that calculate financial metrics, and circular dependencies.
+
+Keep provider-specific parsing outside the portfolio and accounting logic. The core application should depend on the provider abstraction rather than being tightly coupled to a particular vendor.
+
+Do not fetch market prices individually for every row on every page load if a sensible cached or batched approach is possible.
+
+---
+
+# 9. FRONTEND AND UI/UX
+
+Build a cohesive, modern financial dashboard with a professional visual identity for Gabnex.
+
+Use a clean, restrained visual system: strong typography, clear spacing, readable tables, subtle borders, consistent cards, and purposeful chart colors. Aim for a polished financial SaaS application rather than a generic template.
+
+Use responsive layouts for desktop, tablet, and mobile.
+
+## Required pages
+
+1. Login.
+2. Registration.
+3. Main dashboard.
+4. Portfolio list.
+5. Portfolio details.
+6. Holdings.
+7. Transaction history.
+8. Add/edit transaction form.
+9. Asset search.
+10. Watchlist.
+11. Profile/settings.
+12. Appropriate not-found and error states.
+
+## Dashboard layout
+
+Include:
+
+- Navigation/sidebar or another consistent responsive navigation pattern.
+- Portfolio selector where applicable.
+- Summary metrics with clear labels.
+- Allocation chart.
+- Holdings table.
+- Recent transactions.
+- Watchlist information.
+- A clear market-data freshness indicator.
+
+## Interaction quality
+
+Implement:
+
+- Form validation.
+- Loading indicators.
+- Empty states.
+- Error states.
+- Success feedback.
+- Confirmation for destructive operations.
+- Useful table sorting and pagination.
+- Clear navigation.
+- Accessible form labels and keyboard interaction.
+- Sensible responsive behavior.
+- A clear distinction between unavailable values and actual zero values.
+
+Never use static sample portfolio values to simulate a populated user's live dashboard. A new account should have a legitimate empty state with clear actions for adding a portfolio and recording the first transaction.
+
+A seeded demonstration account is not required. If a demonstration mode is added, it must be explicitly labeled, separated from normal user accounts, and never misrepresent simulated prices as real market data.
+
+Keep frontend API calls in a reusable service layer. Do not spread raw fetch calls and authentication logic throughout unrelated components.
+
+Handle expired sessions and API failures gracefully.
+
+---
+
+# 10. SECURITY REQUIREMENTS
+
+Implement reasonable security practices for a portfolio application:
+
+- BCrypt password hashing.
+- Protected API endpoints.
+- Ownership checks on every user-owned resource.
+- Server-side request validation.
+- Safe CORS configuration for the actual frontend origin.
+- Secure authentication and logout behavior.
+- Appropriate CSRF protection based on the authentication mechanism.
+- No secrets in source control.
+- No API keys exposed to the browser.
+- No sensitive tokens or passwords in logs.
+- No sensitive data returned unnecessarily.
+- Appropriate production configuration.
+- Database constraints for important integrity rules.
+
+Do not trust a user ID or ownership identifier supplied by the frontend. Resolve the authenticated user from the security context and enforce ownership in the backend.
+
+Test that one user cannot read, modify, delete, or otherwise access another user's portfolios or related records.
+
+Do not claim that the application is fully secure or audited. Document the security measures implemented and any known limitations.
+
+---
+
+# 11. AUTOMATED TESTING
+
+Implement meaningful tests throughout the project, not just a few superficial controller tests.
+
+## Backend unit tests
+
+Cover:
+
+- Registration and password hashing.
+- Authentication and authorization rules.
+- Portfolio business rules.
+- Transaction validation.
+- Weighted-average-cost calculations.
+- Fees and cost basis.
+- Partial and full sales.
+- Realized and unrealized profit/loss.
+- Allocation calculations.
+- Editing and deleting transactions.
+- Market-data parsing and validation.
+- Stale data and unavailable prices.
+- Provider error handling.
+
+Use explicit test inputs and expected results for financial calculations.
+
+## Backend integration tests
+
+Use Spring Boot Test and MockMvc to verify:
+
+- Registration and login flows.
+- Protected endpoint behavior.
+- Request validation.
+- Portfolio CRUD.
+- Transaction CRUD.
+- Ownership isolation between users.
+- Database relationships and constraints.
+- Error responses.
+- Market-data endpoint behavior.
+- Correct persistence of valid market-price snapshots.
+
+Use an isolated test database where practical, such as PostgreSQL through Testcontainers if the environment supports it. Otherwise use a clearly documented test-database strategy compatible with the actual production database behavior.
+
+Mock external market-data HTTP responses during automated tests. Tests must not depend on an external API being available or consume real provider quotas.
+
+## Frontend tests and checks
+
+Implement suitable tests for critical UI behavior where practical, including form validation, API error states, and display of unavailable market data.
+
+At minimum, run:
+
+- Frontend production build.
+- Frontend linting if configured.
+- Backend test suite.
+- Backend production/package build.
+
+Add tests where they materially improve confidence. Do not chase a particular coverage percentage at the expense of meaningful behavior.
+
+Never invent test results, coverage percentages, or performance metrics.
+
+---
+
+# 12. CONFIGURATION AND ENVIRONMENT VARIABLES
+
+Provide a documented `.env.example` containing placeholders only.
+
+Include the necessary configuration for:
+
+- Database URL.
+- Database username.
+- Database password.
+- JWT secret or equivalent authentication secret.
+- Market-data API key.
+- Market-data base URL when configurable.
+- Frontend origin.
+- Backend port.
+- Any additional provider-specific configuration that is genuinely required.
+
+Use appropriate environment-variable names and configure Spring Boot and Vite correctly.
+
+Never commit real credentials, personal API keys, production tokens, or populated secret files.
+
+Do not embed secrets in frontend variables prefixed with `VITE_`.
+
+Validate required configuration at startup where appropriate. When the market-data key is absent, the application should report that market data is not configured and continue to support features that do not depend on live quotes, rather than pretending to retrieve prices.
+
+---
+
+# 13. DOCKER, CI, AND DEPLOYMENT
+
+## Docker
+
+Create appropriate Dockerfiles and a Docker Compose configuration for local development, including:
+
+- PostgreSQL.
+- Spring Boot backend.
+- React/Vite frontend or a suitable production frontend container.
+
+Ensure services can communicate, database initialization works, and environment variables are passed correctly.
+
+Use persistent database storage for local development. Include health checks or appropriate startup handling so the backend does not fail simply because PostgreSQL takes longer to start.
+
+Do not package secrets into images.
+
+## GitHub Actions
+
+Create a CI workflow that runs on relevant pushes and pull requests.
+
+At minimum:
+
+- Set up the required Java version.
+- Build and test the backend.
+- Set up the required Node.js version.
+- Install frontend dependencies reproducibly.
+- Run frontend checks and a production build.
+- Fail the workflow when required checks fail.
+
+Use a lockfile and reproducible dependency installation. Do not place credentials in the workflow source.
+
+## Deployment readiness
+
+Prepare the project for deployment to an appropriate hosting provider and document the exact steps.
+
+Ensure:
+
+- Production configuration is separate from development configuration.
+- Database migrations run safely.
+- Secrets are supplied through the host's environment settings.
+- The frontend uses the deployed API URL.
+- CORS allows the intended frontend origin.
+- Health checks work.
+- The README accurately explains the deployment process.
+
+If you have access to authenticated deployment tools and all required permissions, you may deploy the application. Otherwise, prepare deployment configuration and provide exact manual steps.
+
+**Do not claim the app is deployed or publicly accessible unless the deployment has actually succeeded and been verified.**
+
+---
+
+# 14. README AND PROJECT DOCUMENTATION
+
+Create a professional root README that matches the actual implementation.
+
+Include:
+
+1. Project name and concise description.
+2. Features.
+3. Screenshots or a clear placeholder section for screenshots to capture after the UI is running.
+4. Technology stack.
+5. Architecture overview.
+6. Database schema or ER diagram.
+7. Important financial calculation rules.
+8. Market-data provider and its limitations.
+9. How quote freshness is represented.
+10. API documentation link and key endpoints.
+11. Prerequisites.
+12. Local setup instructions.
+13. Environment-variable reference.
+14. Database migrations.
+15. How to run backend and frontend.
+16. Docker Compose instructions.
+17. How to run tests.
+18. CI workflow details.
+19. Deployment instructions.
+20. Security decisions and limitations.
+21. Known limitations.
+22. Future improvements.
+23. License.
+
+Document the provider's actual data freshness, free-tier limitations, and any symbol-coverage constraints. Never claim real-time pricing unless the configured provider and plan actually provide it.
+
+Include a `.gitignore` for build outputs, dependency folders, IDE files, logs, and environment files containing secrets.
+
+Do not add fabricated screenshots, fake deployment links, fake badges, or made-up project metrics. If screenshots cannot be captured, provide instructions for capturing them once the application runs.
+
+Choose an appropriate open-source license and include the corresponding license file.
+
+---
+
+# 15. IMPLEMENTATION ORDER
+
+Complete the full project in this order internally. Do not stop after creating the plan.
+
+### Phase 1 — Inspect and establish the foundation
+
+- Inspect the current workspace and existing files.
+- Preserve unrelated files and useful existing work.
+- Establish the project structure.
+- Configure backend, frontend, database migrations, environment configuration, and Git ignore rules.
+- Create a consistent local development setup.
+
+### Phase 2 — Backend, database, and security
+
+- Implement entities, repositories, DTOs, validation, and migrations.
+- Implement authentication and authorization.
+- Implement portfolios and transaction management.
+- Enforce user ownership and data isolation.
+- Add error handling and API documentation.
+
+### Phase 3 — Financial calculation engine
+
+- Implement transaction-based holdings.
+- Implement the selected cost-basis method.
+- Implement fees, realized and unrealized profit/loss, and allocation.
+- Write explicit calculation tests.
+- Verify editing and deleting historical transactions.
+- Fix accounting inconsistencies before relying on these calculations in the UI.
+
+### Phase 4 — Real market-data integration
+
+- Research and select the provider.
+- Implement the provider interface and concrete integration.
+- Add symbol search and supported-asset handling.
+- Validate responses and persist price snapshots.
+- Implement sensible caching and freshness rules.
+- Handle rate limits, missing keys, stale data, and provider failures.
+- Ensure there are no fake production prices.
+
+### Phase 5 — API completion and analytics
+
+- Finish the required REST endpoints.
+- Implement dashboard summaries.
+- Add pagination, filtering, sorting, and allocation.
+- Implement historical performance only where the data supports valid calculations.
+- Add integration tests and verify data isolation.
+
+### Phase 6 — Frontend
+
+- Build the full responsive application.
+- Implement authentication flows.
+- Connect every required page to the backend.
+- Add forms, tables, charts, navigation, loading states, empty states, and error states.
+- Show market-data source and freshness.
+- Ensure missing prices never appear as fabricated numbers.
+- Verify that core features work end-to-end.
+
+### Phase 7 — Testing, Docker, and CI
+
+- Run the backend test suite.
+- Run frontend checks and production build.
+- Fix compilation errors, failing tests, integration issues, and obvious UX problems.
+- Create and verify Docker configuration.
+- Create GitHub Actions CI.
+- Check environment configuration and secret handling.
+
+### Phase 8 — Documentation and final verification
+
+- Finish the README and `.env.example`.
+- Verify clean database initialization and migration behavior.
+- Verify setup instructions.
+- Test the core user journey from registration through recording transactions and viewing holdings.
+- Test unavailable market data and provider failures.
+- Check for fake production data, exposed secrets, broken links, and unsupported README claims.
+- Report the final state honestly.
+
+---
+
+# 16. REQUIRED END-TO-END USER JOURNEY
+
+The finished application should support this flow:
+
+1. A new user opens Gabnex.
+2. They register and log in.
+3. They create an investment portfolio.
+4. They search for a supported stock or ETF using the actual provider.
+5. They add a buy transaction with quantity, execution price, fees, and date.
+6. The backend validates and stores the transaction.
+7. Holdings are derived from the transaction history.
+8. The app retrieves a genuine market quote when the provider is configured and available.
+9. The dashboard displays market value and profit/loss using valid data.
+10. The UI displays the price source and freshness.
+11. The user records another buy or a sell and sees holdings recalculate.
+12. The user can view transaction history and allocation.
+13. If market data becomes unavailable, the application reports that honestly and retains the user's transaction records.
+14. Another user cannot access the first user's portfolios or financial records.
+
+Verify this journey through automated tests and, where possible, manual execution.
+
+---
+
+# 17. DEFINITION OF DONE
+
+Consider the project complete only when the following have been addressed:
+
+- [ ] Backend compiles and packages successfully.
+- [ ] Frontend builds successfully.
+- [ ] PostgreSQL schema can be initialized from migrations.
+- [ ] Authentication and user-specific authorization work.
+- [ ] Portfolio management works.
+- [ ] Transaction management works.
+- [ ] Holdings are derived from transactions.
+- [ ] Financial calculations use documented rules and decimal arithmetic.
+- [ ] A real external market-data provider is integrated.
+- [ ] The provider's actual limitations are documented.
+- [ ] Quote source and freshness are visible.
+- [ ] No fake market prices appear in production behavior.
+- [ ] Missing or stale market data is handled explicitly.
+- [ ] Dashboard and allocation use valid underlying data.
+- [ ] Core backend tests pass.
+- [ ] Frontend checks and build pass.
+- [ ] Docker configuration is provided and verified where the environment permits.
+- [ ] GitHub Actions CI is configured.
+- [ ] README and environment-variable documentation are complete.
+- [ ] No secrets are committed.
+- [ ] Deployment status is accurately reported.
+- [ ] Known limitations and unfinished items are documented.
+
+If any item cannot be completed, explain exactly what remains and why. Never mark an item complete merely because code was generated for it.
+
+---
+
+# 18. AUTONOMOUS EXECUTION RULES
+
+- Start by inspecting the workspace and available tools.
+- Do not overwrite an existing project without understanding its structure.
+- Make reasonable decisions independently rather than asking me to choose every library or filename.
+- Follow the implementation order above while continuing through the full project.
+- Do not stop after producing a plan or scaffolding.
+- Do not leave core features as TODOs, placeholder implementations, or disconnected mockups.
+- Do not silently omit difficult requirements.
+- Do not introduce unnecessary technologies.
+- Do not invent external API capabilities.
+- Do not use fake market prices or fabricated financial history in production.
+- Use mocked data only for isolated automated tests and explicitly labeled examples.
+- Do not claim builds, tests, security checks, coverage, performance, or deployments succeeded unless verified.
+- If a command fails, investigate and fix the cause before continuing.
+- If a required external credential is unavailable, finish all independent work and provide precise configuration instructions.
+- If a provider's free tier cannot support a requested feature, document the limitation and implement a truthful fallback instead of faking the feature.
+- Keep the code understandable enough for a junior developer to maintain and discuss in interviews.
+- Prioritize a complete, working, honest product over an oversized collection of partially implemented features.
+
+## FINAL RESPONSE AFTER IMPLEMENTATION
+
+When you finish, provide a concise but useful handoff containing:
+
+1. **What was built:** implemented features and architecture.
+2. **Technology stack:** the actual libraries and versions used.
+3. **Project structure:** where the backend, frontend, database migrations, tests, and deployment files live.
+4. **Verification:** exact commands run and actual build/test outcomes.
+5. **Market data:** provider selected, what data it supplies, whether it is real-time, delayed, or end-of-day, and how missing or stale prices are handled.
+6. **How to run it:** setup steps and required environment variables.
+7. **Deployment:** actual URL only if a deployment was completed and verified; otherwise, precise deployment instructions.
+8. **Remaining limitations:** anything incomplete, blocked, or not verified.
+9. **Next steps for me:** only the manual actions I genuinely need to take.
+
+Be honest about what is finished. The goal is a complete, reliable, portfolio-worthy application—not merely a large amount of generated code.

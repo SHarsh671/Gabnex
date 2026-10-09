@@ -1,0 +1,11 @@
+CREATE TABLE app_user (id BIGSERIAL PRIMARY KEY, name VARCHAR(120) NOT NULL, email VARCHAR(254) NOT NULL UNIQUE, password_hash VARCHAR(100) NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE UNIQUE INDEX idx_app_user_email_normalized ON app_user(lower(email));
+CREATE TABLE portfolio (id BIGSERIAL PRIMARY KEY, owner_id BIGINT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE, name VARCHAR(120) NOT NULL, base_currency CHAR(3) NOT NULL DEFAULT 'USD', created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX idx_portfolio_owner ON portfolio(owner_id);
+CREATE TABLE asset (id BIGSERIAL PRIMARY KEY, provider_symbol VARCHAR(80) NOT NULL, ticker VARCHAR(32) NOT NULL, name VARCHAR(255) NOT NULL, exchange VARCHAR(80), currency VARCHAR(3), asset_type VARCHAR(32), provider VARCHAR(40) NOT NULL DEFAULT 'ALPHA_VANTAGE', UNIQUE(provider, provider_symbol));
+CREATE TABLE investment_transaction (id BIGSERIAL PRIMARY KEY, portfolio_id BIGINT NOT NULL REFERENCES portfolio(id) ON DELETE CASCADE, asset_id BIGINT NOT NULL REFERENCES asset(id), type VARCHAR(8) NOT NULL CHECK(type IN ('BUY','SELL')), quantity NUMERIC(24,8) NOT NULL CHECK(quantity > 0), execution_price NUMERIC(24,8) NOT NULL CHECK(execution_price > 0), fees NUMERIC(20,8) NOT NULL DEFAULT 0 CHECK(fees >= 0), occurred_at TIMESTAMPTZ NOT NULL, notes VARCHAR(1000), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX idx_tx_portfolio_date ON investment_transaction(portfolio_id, occurred_at DESC);
+CREATE INDEX idx_tx_asset ON investment_transaction(asset_id);
+CREATE TABLE watchlist_item (id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE, asset_id BIGINT NOT NULL REFERENCES asset(id) ON DELETE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(user_id, asset_id));
+CREATE TABLE market_price_snapshot (id BIGSERIAL PRIMARY KEY, asset_id BIGINT NOT NULL REFERENCES asset(id) ON DELETE CASCADE, price NUMERIC(24,8) NOT NULL CHECK(price > 0), currency VARCHAR(3), provider VARCHAR(40) NOT NULL, provider_timestamp TIMESTAMPTZ, retrieved_at TIMESTAMPTZ NOT NULL, classification VARCHAR(32) NOT NULL);
+CREATE INDEX idx_price_asset_retrieved ON market_price_snapshot(asset_id, retrieved_at DESC);

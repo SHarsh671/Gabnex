@@ -1,0 +1,25 @@
+server:
+  port: ${PORT:8080}
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/gabnex}
+    username: ${DATABASE_USERNAME:gabnex}
+    password: ${DATABASE_PASSWORD:gabnex}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+app:
+  jwt-secret: ${JWT_SECRET:development-only-secret-change-this-to-at-least-32-bytes}
+  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
+market-data:
+  base-url: ${MARKET_DATA_BASE_URL:https://www.alphavantage.co/query}
+  api-key: ${MARKET_DATA_API_KEY:}
+  cache-minutes: ${MARKET_DATA_CACHE_MINUTES:1440}

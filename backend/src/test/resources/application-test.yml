@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:gabnex_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  sql:
+    init:
+      mode: always
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  flyway:
+    enabled: false
+  h2:
+    console:
+      enabled: false
+app:
+  jwt-secret: test-integration-secret-32-bytes-0000
+  frontend-origin: http://localhost:5173
+market-data:
+  api-key: ''
+  base-url: https://www.alphavantage.co/query
+  cache-minutes: 1440
